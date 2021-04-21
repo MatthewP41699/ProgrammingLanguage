@@ -1,0 +1,4 @@
+Input the following into variable: x .
+x the following into variable: x + 1.
+Output the following: {x+1}.
+

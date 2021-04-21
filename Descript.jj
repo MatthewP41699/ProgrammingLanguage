@@ -1,0 +1,144 @@
+/* JavaCC input file for a simple imperative language. */
+
+PARSER_BEGIN(Descript)   
+import java.io.*;
+import java.util.*;
+
+class Descript {
+     public static HashMap<String, Integer> ram;
+     public static void main(String[] args) throws ParseException, TokenMgrError {         
+          if (args.length > 0) {            
+              try {
+		  ram = new HashMap<String, Integer>();
+	          Descript scan = new Descript(new FileInputStream(args[0]));               
+                  Node root = scan.Program();            
+			  root.eval();
+                  } catch (FileNotFoundException ex) {               
+                      System.out.println("File "+args[0]+" not found.");            
+                      }         
+            } else {            
+                System.out.println("Must specify source code file name.");         
+            }      
+        }   
+}
+
+PARSER_END(Descript)
+
+
+
+Node Program():
+{
+	Node n;
+	Node c;
+}
+{   {n = new BlockNode();}
+    (
+	c = Input() { n.addChild(c); }
+   	|      
+     	c = Output(){ n.addChild(c); }   
+    )+   
+    <EOF>
+    {return n;}
+}
+
+Node Input():
+{
+	 Node n;
+  	 Token c;
+}
+{
+	{n = new InputNode();}
+	
+        <INPUT> <ASSIGN> c = <ID> 	{n.addChild(new VarNode(c.image));} <STOP>
+	{return n;}
+}
+
+Node Output():
+{
+	 Node out;
+	 Token c;
+}
+{
+	{out = new OutputNode();}
+        <OUTPUT> <LPAREN> c = <ID>   {out.addChild(new VarNode(c.image));}  <RPAREN> <STOP>
+	{return out;}
+}
+
+Node Assign():
+{
+	 Node n;
+	 Node c;
+	 Token t;
+}
+{
+	{n = new AssignNode();}
+	t =<ID>  {n.addChild(new VarNode(t.image)); }
+	<ASSIGN>
+	c = Exp() {n.addChild(c);}
+	<STOP>
+	{return n;}
+}
+
+Node Exp():
+{
+	 Node n;
+	 Node c;
+}
+{
+	{n = new ExpNode();}
+	c = Product() {n.addChild(c);}
+	(
+		(
+			<PLUS> {n.addChild(new OpNode("+")); }
+			|
+			<MINUS> {n.addChild(new OpNode("-"));}
+		)
+	c = Product() { n.addChild(c); }
+	)*
+	{return n;}
+}
+
+Node Factor():
+{
+Token t;}
+{
+	t=<ID> { return new VarNode(t.image); }
+	|
+	t=<INT> { return new IntNode(t.image); }
+}
+
+Node Product():{
+	 Node n;
+         Node c;
+}
+{
+        {n = new ProductNode();}
+        c = Factor() {n.addChild(c);}
+        (
+                ( 	<DIVIDE> {n.addChild(new OpNode("/")); }
+			|
+			<MULTIPLY> {n.addChild(new OpNode("*")); }
+                        |
+			<MODULO> {n.addChild(new OpNode("%")); }
+                )
+        c = Factor() { n.addChild(c); }
+        )*
+        {return n;}
+}
+
+																							
+SKIP : { " " | "\t" | "\n" }
+TOKEN : { <INT : "0"|["1"-"9"](["0"-"9"])* > }
+TOKEN : { <ASSIGN : "the following into variable:" > }
+TOKEN : { <INPUT : "Input" > }
+TOKEN : { <OUTPUT : "Output the following:" > }
+TOKEN : { <STOP : "." > }
+TOKEN : { <LPAREN : "{" > }
+TOKEN : { <RPAREN : "}" > }
+TOKEN : { <MINUS : "-"> }
+TOKEN : { <PLUS : "+"> }
+TOKEN : { <MULTIPLY : "*" > }
+TOKEN : { <DIVIDE : "/" > }
+TOKEN : { <MODULO : "%" > }
+TOKEN : { <ID : ["a"-"z", "A"-"Z"](["a"-"z","A"-"Z","0"-"9"]|"_")* > }
+
